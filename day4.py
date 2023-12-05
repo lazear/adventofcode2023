@@ -11,17 +11,17 @@ Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11
 """.splitlines()
 cards = open("input/day4").read().splitlines()
 
-instances = defaultdict(lambda: 1) 
+instances = defaultdict(lambda: 1)
 
 p1 = 0
 for card in cards:
     n = int(re.search("Card\s+(\d+):", card).groups()[0])
-    left = card.split('|')[0].split(':')[1]
-    right = card.split('|')[1]
+    left = card.split("|")[0].split(":")[1]
+    right = card.split("|")[1]
     w = [int(x) for x in re.findall("(\d+)", left)]
     m = [int(x) for x in re.findall("(\d+)", right)]
     matches = len(set(w).intersection(m))
-    points = int(2**(matches - 1))
+    points = int(2 ** (matches - 1))
     p1 += points
 
     for repeat in range(instances[n - 1]):
