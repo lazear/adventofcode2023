@@ -2,9 +2,9 @@ use std::collections::HashMap;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, Hash)]
 enum Card {
+    Jack,
     Low(u8),
     Ten,
-    Jack,
     Queen,
     King,
     Ace,
@@ -49,8 +49,24 @@ fn parse_hand(line: &str) -> Hand {
     for card in cards.iter() {
         *map.entry(card).or_default() += 1;
     }
-    let mut counts = map.values().collect::<Vec<_>>();
+    let mut counts = map
+        .iter()
+        .filter_map(|(c, count)| {
+            if Card::Jack == **c {
+                None
+            } else {
+                Some(*count)
+            }
+        })
+        .collect::<Vec<_>>();
+
     counts.sort_by(|a, b| b.cmp(a));
+    if counts.is_empty() {
+        counts = map.values().copied().collect();
+    } else {
+        counts[0] += map.get(&Card::Jack).copied().unwrap_or_default();
+    }
+
     for count in counts {
         kind = match (kind, count) {
             (_, 5) => Kind::Five,
@@ -67,7 +83,10 @@ fn parse_hand(line: &str) -> Hand {
 }
 
 fn main() {
-    // let mut hands = TEST.lines().map(|line| parse_hand(line)).collect::<Vec<_>>();
+    let mut hands = TEST
+        .lines()
+        .map(|line| parse_hand(line))
+        .collect::<Vec<_>>();
     let mut hands = include_str!("../input")
         .lines()
         .map(|line| parse_hand(line))
