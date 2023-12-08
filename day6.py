@@ -15,8 +15,3 @@ for (time, dist) in xs:
             wins += 1
     acc *= wins
 print(acc)
-        
-            # wins.append(hold)
-    # print(reduce(lambda x,y: x * y, wins, 1))
-    
-    

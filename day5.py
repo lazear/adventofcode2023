@@ -1,6 +1,7 @@
 import math
 import re
 import numpy as np
+from loguru import logger
 from collections import defaultdict
 
 maps = """\
@@ -56,7 +57,6 @@ for row in maps[1:]:
         curr.append(row)
 xs.append(curr)
 
-
 def run(seeds):
     lowest_ptr = math.inf
     for seed in seeds:
@@ -69,25 +69,48 @@ def run(seeds):
         lowest_ptr = min(lowest_ptr, ptr)
     return lowest_ptr
 
-
 print(f"part_1={run(seeds)}")
 
-# start with bottom range
-# for [dest, src, width] in xs[::-1]:
+pairs = []
+for i in range(0, len(seeds), 2):
+    pairs.append((seeds[i], seeds[i] + seeds[i+1] - 1))
+print(pairs)
 
 
-for i in range(len(xs)):
-    # can we break up this range into smaller ones?
-    for [d1, s1, w1] in xs[i]:
-        A, B = (d1, d1 + w1 - 1)
-        print(f"top {s1}..{s1+w1} => {d1}..{d1+w1}")
-        for j in range(i + 1, len(xs)):
-            for [d2, s2, w2] in xs[j]:
-                C, D = (s2, s2 + w2 - 1)
-                print(f" -b {s2}..{s2+w2} => {d2}..{d2+w2}")
-                if max(A, C) <= min(B, D):
-                    print(f"overlap? ({d1}..{d1+w1}) & ({s2}..{s2+w2})")
 
-            break
-        # break
-    break
+# for pair in pairs:
+#     work = []
+#     for ranges in xs:
+#         # while len(work):
+#             # p = work.pop()
+#             for [dst, src, w] in ranges:
+#                 x, y = pair
+#                 a, b = src, src+w
+
+#                 logger.debug(f"{x}-{y} : {a} {b}")
+#                 '''
+#                 x-y a-b : no overlap
+#                 a-b x-y : no overlap
+#                 x-a-b-y : subsume
+#                 a-x-y-b : subsume
+#                 x-a-y-b : partial
+#                 a-x-b-y : partial
+#                 '''
+#                 if y < a or b < x: # no overlap
+#                     logger.debug("no overlap")
+#                     continue
+#                 elif x <= a and y >= b:
+#                     logger.debug("x-a-b-y")
+#                     work.extend([(x, a), (a, b), (b, y)])
+#                 elif x >= a and x < b and y <= b:
+#                     logger.debug("a-x-y-b")
+#                     work.extend([(a, x), (x, y), (y, b)])
+#                 elif x <= a and y <= b:
+#                     logger.debug("x-a-y-b")
+#                     work.extend([(x, a), (a, y), (y, b)])
+#                 elif x >= a and b <= y:
+#                     logger.debug("a-x-b-y")
+#                     work.extend([(a, x), (x, b), (b, y)])
+#                 else:
+#                     logger.error(f"unhandled case {x}-{y} {a}-{b}")
+#     print(work)
