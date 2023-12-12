@@ -11,10 +11,10 @@ enum Dir {
 impl Dir {
     pub fn coord(self, x: usize, y: usize) -> (usize, usize) {
         match self {
-            Dir::N => (x, y.saturating_sub(1)),
+            Dir::N => (x, y - 1),
             Dir::S => (x, y + 1),
             Dir::E => (x + 1, y),
-            Dir::W => (x.saturating_sub(1), y),
+            Dir::W => (x - 1, y),
         }
     }
 }
@@ -41,22 +41,37 @@ pub fn parse(s: &str) -> Graph {
             use Dir::*;
             match ch {
                 '|' => {
+                    if y == 0 {
+                        continue;
+                    }
                     edges.push((N.coord(x, y), (x, y)));
                     edges.push(((x, y), S.coord(x, y)));
                 }
                 '-' => {
+                    if x == 0 {
+                        continue;
+                    }
                     edges.push((W.coord(x, y), (x, y)));
                     edges.push(((x, y), E.coord(x, y)));
                 }
                 'L' => {
+                    if y == 0 {
+                        continue;
+                    }
                     edges.push((N.coord(x, y), (x, y)));
                     edges.push(((x, y), E.coord(x, y)));
                 }
                 'J' => {
+                    if x == 0 || y == 0 {
+                        continue;
+                    }
                     edges.push((N.coord(x, y), (x, y)));
                     edges.push(((x, y), W.coord(x, y)));
                 }
                 '7' => {
+                    if x == 0 {
+                        continue;
+                    }
                     edges.push((S.coord(x, y), (x, y)));
                     edges.push(((x, y), W.coord(x, y)));
                 }
@@ -107,7 +122,6 @@ impl Graph {
         while let Some((node_idx, depth)) = stack.pop_front() {
             // eprintln!("visiting {node_idx} @ {depth}");
             if depth >= distance[node_idx] {
-                // if distance[node_idx] != usize::MAX {
                 // eprintln!("visiting {node_idx} @ {depth} - already been here at shorter distance");
                 continue;
             }
@@ -121,18 +135,17 @@ impl Graph {
                     stack.push_back((edge.0, depth + 1));
                 }
             }
-            // dbg!(&stack);
-            dbg!(stack.len());
+            // dbg!(stack.len());
         }
 
         for row in distance.chunks(distance.len() / self.stride) {
             let ch = row
                 .iter()
                 .map(|row| {
-                    if *row >= 10 {
+                    if *row == usize::MAX {
                         '.'
                     } else {
-                        ((*row as u8).min(9) + b'0') as char
+                        ((*row.min(&9)) as u8 + b'0') as char
                     }
                 })
                 .collect::<String>();
@@ -149,12 +162,18 @@ impl Graph {
 }
 
 fn main() {
-    let g = dbg!(parse(EX1));
+    let g = (parse(EX4));
+    dbg!(g.dfs());
+    let g = (parse(EX3));
     dbg!(g.dfs());
 
-    let input = include_str!("../input");
-    let g = (parse(input));
-    dbg!(g.dfs());
+    let e = dbg!(&g.nodes[12]);
+    let e = dbg!(&g.edges[18]);
+    let e = dbg!(&g.edges[19]);
+
+    // let input = include_str!("../input");
+    // let g = (parse(input));
+    // dbg!(g.dfs());
 
     // let m = g.dfs_(g.start, &mut vec![false; g.nodes.len()], 0);
     // dbg!(m);
@@ -167,6 +186,18 @@ const EX1: &'static str = r#".....
 ....."#;
 
 const EX2: &'static str = r#"..F7.
+.FJ|.
+SJ.L7
+|F--J
+LJ..."#;
+
+const EX3: &'static str = r#"7-F7-
+.FJ|7
+SJLL7
+|F--J
+LJ.LJ"#;
+
+const EX4: &'static str = r#"..F7.
 .FJ|.
 SJ.L7
 |F--J
