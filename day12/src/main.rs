@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
 enum State {
     Operational,
@@ -32,6 +34,22 @@ fn parse_one(line: &str) -> Option<Alignment> {
 }
 
 impl Alignment {
+    fn expand(&self) -> Alignment {
+        let blocks = (0..5)
+            .flat_map(|n| {
+                self.blocks
+                    .iter()
+                    .copied()
+                    .chain(std::iter::once(State::Unknown).take(4 - n))
+            })
+            .collect::<Vec<_>>();
+
+        let lengths = (0..5)
+            .flat_map(|_| self.lengths.iter().copied())
+            .collect::<Vec<_>>();
+        Alignment { blocks, lengths }
+    }
+
     fn can_fit(&self, index: usize, length: usize) -> bool {
         if index + length > self.blocks.len() {
             return false;
@@ -54,56 +72,71 @@ impl Alignment {
         true
     }
 
-    /// check final layout
+    /// check layout
     fn check(&self, layout: &[usize]) -> bool {
-        let total_damaged = self.blocks.iter().filter(|x| **x == State::Damaged).count();
-        let mut covered = 0;
+        let mut aligned = vec![State::Unknown; self.blocks.len()];
+        let mut max = 0;
         for (&position, &length) in layout.iter().zip(&self.lengths) {
-            covered += self.blocks[position..position + length]
-                .iter()
-                .filter(|x| **x == State::Damaged)
-                .count();
+            for i in 0..length {
+                aligned[position + i] = State::Damaged;
+            }
+            max = max.max(position + length);
         }
-        covered == total_damaged
+        if layout.len() < self.lengths.len() {
+            aligned.truncate(max + 1);
+        }
+
+        for (actual, aligned) in self.blocks.iter().zip(&aligned) {
+            if *actual == State::Damaged && *aligned != State::Damaged {
+                return false;
+            }
+        }
+        true
     }
 
-    pub fn solve_recur(&mut self, start: usize, group: usize, history: Vec<usize>) -> usize {
+    pub fn solve_recur(
+        &self,
+        start: usize,
+        group: usize,
+        history: Vec<usize>,
+        memo: &mut HashMap<(usize, usize), usize>,
+    ) -> usize {
         if group >= self.lengths.len() {
             return 0;
         }
-        let mut sum = 0;
 
+        if let Some(sum) = memo.get(&(start, group)) {
+            return *sum;
+        }
+
+        let mut sum = 0;
+        let len = self.lengths[group];
         for i in start..self.blocks.len() {
-            if self.can_fit(i, self.lengths[group]) {
+            if self.can_fit(i, len) {
                 let mut h = history.clone();
                 h.push(i);
-                if group == self.lengths.len() - 1 {
-                    if self.check(&h) {
+                if self.check(&h) {
+                    if group == self.lengths.len() - 1 {
                         sum += 1;
+                    } else {
+                        let sub = self.solve_recur(i + len + 1, group + 1, h, memo);
+                        sum += sub;
                     }
-                } else {
-                    sum += self.solve_recur(i + self.lengths[group] + 1, group + 1, h);
                 }
             }
         }
+        memo.insert((start, group), sum);
         sum
     }
 }
 
 fn main() {
-    println!("Hello, world!");
-    // let a = parse_one("?###???????? 3,2,1").unwrap();
-    // let a = parse_one("????.######..#####. 1,6,5").unwrap();
-    // let a = parse_one("?#?#?#?#?#?#?#? 1,3,1,6").unwrap();
-    // let a = parse_one("????#?#???????#????? 6,5").unwrap();
-    let mut a = parse_one("??.#???##?#??? 1,5").unwrap();
-    dbg!(a.solve_recur(0, 0, Vec::new()));
-
     let input = include_str!("../input");
     let mut sum = 0;
     for a in input.lines().map(|l| parse_one(l)) {
-        let x = a.unwrap().solve_recur(0, 0, vec![]);
-        eprintln!("{:?}", x);
+        let a = a.unwrap();
+        let x = a.expand().solve_recur(0, 0, vec![], &mut HashMap::new());
+        dbg!(x);
         sum += x;
     }
     eprintln!("part1={sum}");
